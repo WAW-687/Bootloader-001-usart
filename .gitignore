@@ -1,0 +1,7 @@
+# Keil 编译输出与界面缓存（不需要上传）
+Listings/
+Objects/
+DebugConfig/
+*.uvguix.*
+JLinkLog.txt
+*.bak
