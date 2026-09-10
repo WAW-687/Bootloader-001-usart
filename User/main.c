@@ -1,3 +1,14 @@
+/**
+  ******************************************************************************
+  * @file    main.c
+  * @brief   OTA Bootloader 主程序（Bootloader 区，0x08000000~0x08004FFF）
+  * @note    上电流程（BootLoader_Branch 分流）：
+  *          ① 2s 内敲 'w' → 命令行模式，菜单 [1]~[7] 手动操作
+  *          ② W25Q64 元数据里 OTA_flag==0xAABB1122 → 主循环执行固件搬运
+  *          ③ 否则 → LOAD_A 跳转 App 区（0x08005000）
+  *          全局控制块 OTA_Info / UpDataA / BootStaFlag 定义在本文件。
+  ******************************************************************************
+  */
 #include "stm32f10x.h"                  // Device header
 #include "usart.h"
 #include "delay.h"
@@ -49,16 +60,6 @@ int main(void)
 			UpDataA.XmodemTimer++;                // 每圈+1
 		}
 
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 		
         if(BootStaFlag & UPDATA_A_FLAG)
         {

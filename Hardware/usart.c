@@ -1,3 +1,13 @@
+/**
+  ******************************************************************************
+  * @file    usart.c
+  * @brief   USART1 驱动（115200 8N1）+ DMA1_Channel5 不定长接收 + u1_printf
+  * @note    引脚：PA9-TX（复用推挽）、PA10-RX（浮空输入）。
+  *          接收方案：DMA 循环写入 U1_RxBuff，USART1 空闲中断（IDLE）判定一帧
+  *          结束，帧的起止位置记入 U1CB 环形帧队列，主循环从 OUT 指针取帧。
+  *          由 GD32 USART0+DMA 课程代码移植而来（CH4→CH5，函数名对应替换）。
+  ******************************************************************************
+  */
 #include "stm32f10x.h"                  // Device header
 #include "usart.h"
 
@@ -5,6 +15,10 @@ uint8_t U1_RxBuff[U1_RX_SIZE];
 uint8_t U1_TxBuff[U1_TX_SIZE];
 UCB_CB U1CB;
 
+/**
+ * @brief  串口1初始化：GPIO + USART1(8N1) + NVIC + DMA1通道5 + 空闲中断
+ * @param  bandrate 波特率（本工程固定传 115200）
+ */
 void Usart1_Init(uint32_t bandrate)
 {
 	/* 使能时钟 */
@@ -73,6 +87,10 @@ void Usart1_Init(uint32_t bandrate)
     USART_Cmd(USART1, ENABLE);
 }
 
+/**
+ * @brief  帧队列指针初始化：IN/OUT 都归零号槽，游标清零
+ * @note   在 Usart1_Init 末尾调用一次；上电后第一帧数据落在 U1_RxBuff[0]
+ */
 void U1Rx_PtrInit(void)
 {
 	U1CB.URxDataIN = &U1CB.URxDataPtr[0];
@@ -83,6 +101,12 @@ void U1Rx_PtrInit(void)
 }
 
 
+/**
+ * @brief  串口1格式化打印（类似 printf，阻塞发送）
+ * @note   vsprintf 先在 U1_TxBuff 里拼好字符串，再逐字节查 TXE 标志发送，
+ *         最后等 TC 发送完成标志——保证函数返回后数据已完整发出。
+ *         注意缓冲区 2048 字节上限，超长格式化会溢出。
+ */
 void u1_printf(char *format, ...)
 {
     uint16_t i;
